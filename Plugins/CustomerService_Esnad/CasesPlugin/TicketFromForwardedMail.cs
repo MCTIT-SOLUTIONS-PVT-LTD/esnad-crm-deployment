@@ -189,6 +189,7 @@ namespace CasesPlugin
                                             {
                                                 ["title"] = subject1,
                                                 ["description"] = reason,
+                                                ["new_tickettype"] = GetLookupByName(service, "new_tickettype", subject1),
                                                 ["new_requesttype"] = new OptionSetValue(GetOptionSetValue(service, "incident", "new_requesttype", requestType2)),
 
                                                 ["new_beneficiarytype"] = new OptionSetValue(GetOptionSetValue(service, "incident", "new_beneficiarytype", beneficiaryType)),
@@ -233,7 +234,7 @@ namespace CasesPlugin
 
                                         }
 
-                                        else if (subject1.ToLower() == "contact us")
+                                        else if (subject1.ToLower() == "contact us"|| subject1.ToLower() == "اتصل بنا")
                                         {
                                             string beneficiaryType = MatchValue(
                                              body,
@@ -340,6 +341,7 @@ namespace CasesPlugin
                                             {
                                                 ["title"] = subject,
                                                 ["description"] = message,
+                                                ["new_tickettype"] = GetLookupByName(service, "new_tickettype", subject1),
                                                 //["new_tickettype"] = GetLookupByName(service, "new_tickettype", requestType),
                                                 ["new_requesttype"] = new OptionSetValue(GetOptionSetValue(service, "incident", "new_requesttype", requestType)),
                                                 ["new_beneficiarytype"] = new OptionSetValue(GetOptionSetValue(service, "incident", "new_beneficiarytype", beneficiaryType)),

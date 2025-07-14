@@ -12,11 +12,16 @@ public class CaseReportController : ApiController
 {
     [HttpGet]
     [Route("report")]
-    public IHttpActionResult GetCases(string filter = "all", int page = 1, int pageSize = 10)
+    public IHttpActionResult GetCases(string filter = "all", int page = 1, int? pageSize = null)
     {
         try
         {
-            var expectedToken = System.Configuration.ConfigurationManager.AppSettings["ReportDataToken"];
+            var allowedTokens = new List<string>
+            {
+                System.Configuration.ConfigurationManager.AppSettings["ReportDataToken"],
+                System.Configuration.ConfigurationManager.AppSettings["ReportDataToken1"]
+            };
+
             string token = "";
 
             if (Request.Headers.Authorization != null && Request.Headers.Authorization.Scheme == "Bearer")
@@ -28,7 +33,7 @@ public class CaseReportController : ApiController
                 token = Request.GetQueryNameValuePairs().First(kvp => kvp.Key == "token").Value;
             }
 
-            if (token != expectedToken)
+            if (!allowedTokens.Contains(token))
             {
                 return Unauthorized();
             }
@@ -48,15 +53,14 @@ public class CaseReportController : ApiController
                 PageInfo = new PagingInfo
                 {
                     PageNumber = page,
-                    Count = pageSize,
+                    Count = (!pageSize.HasValue || pageSize.Value <= 0) ? int.MaxValue : pageSize.Value,
                     PagingCookie = null
                 }
+
             };
 
-            // Sort by newest cases
             query.Orders.Add(new OrderExpression("createdon", OrderType.Descending));
 
-            // KSA timezone filtering
             var ksaTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Arab Standard Time");
             var ksaNow = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, ksaTimeZone);
             DateTime ksaStart;
@@ -68,9 +72,7 @@ public class CaseReportController : ApiController
             }
             else if (filter.ToLower() == "weekly")
             {
-                int diff = (int)ksaNow.DayOfWeek - (int)DayOfWeek.Sunday;
-                if (diff < 0) diff += 7;
-                ksaStart = ksaNow.Date.AddDays(-diff);
+                ksaStart = ksaNow.Date.AddDays(-7); // ✅ Last 7 days, not week start
                 query.Criteria.AddCondition("createdon", ConditionOperator.OnOrAfter, ksaStart);
             }
             else if (filter.ToLower() == "monthly")
@@ -214,10 +216,7 @@ public class CaseReportController : ApiController
             ColumnSet = new ColumnSet("new_customersatisfactionrating", "new_customersatisfactionscore", "new_wasthetimetakentoprocesstheticketappropri"),
             Criteria = new FilterExpression
             {
-                Conditions =
-            {
-                new ConditionExpression("new_csatcase", ConditionOperator.Equal, caseId)
-            }
+                Conditions = { new ConditionExpression("new_csatcase", ConditionOperator.Equal, caseId) }
             }
         };
 
@@ -238,7 +237,6 @@ public class CaseReportController : ApiController
 
         return (score, comment, appropriateTimeTaken);
     }
-
 
     private string MapStatusCodeToStage(Entity ticket)
     {

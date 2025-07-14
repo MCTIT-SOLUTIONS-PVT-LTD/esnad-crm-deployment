@@ -121,11 +121,9 @@ function openCommentModal(formContext) {
         var formContext = window.top._statusCommentContext;
         if (!formContext) return;
 
-        // Step 1: Save form first
         formContext.data.save().then(function () {
             console.log("✅ Form saved");
 
-            // Step 2: After save, create the note
             var caseId = formContext.data.entity.getId().replace(/[{}]/g, "");
             var statusAttr = formContext.getAttribute("statuscode");
             var statusLabel = statusAttr && statusAttr.getText ? statusAttr.getText() : statusAttr.getValue();
@@ -139,16 +137,13 @@ function openCommentModal(formContext) {
             Xrm.WebApi.createRecord("annotation", note).then(function (result) {
                 console.log("📝 Note created:", result.id);
 
-                // Step 3: Set case owner
                 setCaseOwnerToCustomerService(formContext);
 
-                // Step 4: Wait a short delay before changing stage
                 setTimeout(function () {
                     console.log("⏳ Attempting stage change after save delay...");
-                    activateProcessingStage(formContext); // ✅ Now stage will reliably update
-                }, 1000); // 1 second delay (adjust if needed)
+                    activateProcessingStage(formContext);
+                }, 1000);
 
-                // Step 5: Close modal
                 window.top.closeStatusCommentModal();
             }, function (error) {
                 console.error("❌ Failed to save note:", error.message);
@@ -167,38 +162,48 @@ function openCommentModal(formContext) {
     };
 }
 
+// ✅ Fallback Owner Assignment (Dev/Prod)
 function setCaseOwnerToCustomerService(formContext) {
-    var caseId = formContext.data.entity.getId();
+    const caseId = formContext.data.entity.getId();
     if (!caseId) return;
 
-    var teamName = "Customer Service Department";
+    const teamGuids = [
+        "fca3c311-074c-f011-a400-fbb6a348b744",  // Prod
+        "2c80efda-7c4b-f011-a3ff-af212fee8ea9"
+    ];
 
-    Xrm.WebApi.retrieveMultipleRecords("team", "?$select=teamid&$filter=name eq '" + teamName + "'").then(function (result) {
-        if (!result.entities.length) {
-            console.error("❌ Team '" + teamName + "' not found.");
+    function tryAssignToTeam(index) {
+        if (index >= teamGuids.length) {
+            console.error("❌ All team assignment attempts failed.");
             return;
         }
 
-        var teamId = result.entities[0].teamid;
+        const teamId = teamGuids[index];
+        console.log(`🔄 Trying to assign case to Team [${index + 1}] with GUID: ${teamId}`);
+
         Xrm.WebApi.updateRecord("incident", caseId, {
-            "ownerid@odata.bind": "/teams(" + teamId + ")"
+            "ownerid@odata.bind": `/teams(${teamId})`
         }).then(function () {
-            console.log("✅ Case owner set to '" + teamName + "' team.");
+            console.log(`✅ Case assigned to Team [${index + 1}]`);
             formContext.data.refresh(false);
-        }, function (err) {
-            console.error("❌ Error setting owner:", err.message);
+        }).catch(function (error) {
+            console.warn(`⚠️ Failed to assign to Team [${index + 1}]: ${error.message}`);
+            tryAssignToTeam(index + 1); // Fallback to next team
         });
-    });
+    }
+
+    tryAssignToTeam(0); // Start with first GUID
 }
 
 function activateProcessingStage(formContext) {
-    var targetStageName = "Processing";
+    const targetStageName = "Processing";
 
     try {
-        var activePath = formContext.data.process.getActivePath();
-        var targetStage = null;
-        for (var i = 0; i < activePath.length; i++) {
-            var s = activePath[i];
+        const activePath = formContext.data.process.getActivePath();
+        let targetStage = null;
+
+        for (let i = 0; i < activePath.length; i++) {
+            const s = activePath[i];
             if (s.getName().trim().toLowerCase() === targetStageName.toLowerCase()) {
                 targetStage = s;
                 break;
@@ -206,39 +211,39 @@ function activateProcessingStage(formContext) {
         }
 
         if (!targetStage) {
-            console.warn("⚠ Stage '" + targetStageName + "' not found. Using Web API fallback.");
+            console.warn("⚠ Stage not found in UI path. Using Web API.");
             forceChangeViaWebAPI(formContext, targetStageName);
             return;
         }
 
         formContext.data.process.setActiveStage(targetStage.getId(), function (result) {
             if (result === "success") {
-                console.log("✅ UI stage changed to: " + targetStageName);
+                console.log("✅ Stage changed to:", targetStageName);
             } else {
                 forceChangeViaWebAPI(formContext, targetStageName);
             }
         });
     } catch (err) {
-        console.error("❌ Error changing stage:", err);
+        console.error("❌ Error in activateProcessingStage:", err.message);
     }
 }
 
 function forceChangeViaWebAPI(formContext, targetStageName) {
     try {
-        var instanceId = formContext.data.process.getInstanceId();
-        var processId = formContext.data.process.getActiveProcess().getId();
+        const instanceId = formContext.data.process.getInstanceId();
+        const processId = formContext.data.process.getActiveProcess().getId();
         if (!instanceId || !processId) return;
 
         Xrm.WebApi.retrieveRecord("workflow", processId, "?$select=uniquename").then(function (workflow) {
-            var bpfEntityLogicalName = workflow.uniquename.toLowerCase();
+            const bpfEntityLogicalName = workflow.uniquename.toLowerCase();
 
             Xrm.WebApi.retrieveRecord(bpfEntityLogicalName, instanceId, "?$expand=processid($select=workflowid)").then(function (bpfRecord) {
-                var actualProcessId = bpfRecord.processid.workflowid;
+                const actualProcessId = bpfRecord.processid.workflowid;
 
-                Xrm.WebApi.retrieveMultipleRecords("processstage", "?$filter=processid/workflowid eq " + actualProcessId).then(function (stageResults) {
-                    var matchedStage = null;
-                    for (var i = 0; i < stageResults.entities.length; i++) {
-                        var stage = stageResults.entities[i];
+                Xrm.WebApi.retrieveMultipleRecords("processstage", `?$filter=processid/workflowid eq ${actualProcessId}`).then(function (stageResults) {
+                    let matchedStage = null;
+                    for (let i = 0; i < stageResults.entities.length; i++) {
+                        const stage = stageResults.entities[i];
                         if (stage.stagename.trim().toLowerCase() === targetStageName.toLowerCase()) {
                             matchedStage = stage;
                             break;
@@ -247,14 +252,14 @@ function forceChangeViaWebAPI(formContext, targetStageName) {
 
                     if (!matchedStage) return;
 
-                    var updateData = {
-                        "activestageid@odata.bind": "/processstages(" + matchedStage.processstageid + ")"
+                    const updateData = {
+                        "activestageid@odata.bind": `/processstages(${matchedStage.processstageid})`
                     };
 
                     Xrm.WebApi.updateRecord(bpfEntityLogicalName, instanceId, updateData).then(function () {
-                        console.log("✅ Stage set via Web API.");
+                        console.log("✅ Stage updated via Web API.");
                     }, function (err) {
-                        console.error("❌ Web API stage set failed:", err.message);
+                        console.error("❌ Web API stage update failed:", err.message);
                     });
                 });
             });

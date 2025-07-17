@@ -34,7 +34,7 @@ namespace CustomerService_Esnad
                 Guid caseId = caseRef.Id;
                 tracing.Trace($"✅ Resolving Case: {caseId}");
 
-                // Create incident resolution
+                // Create incident resolution after the sending Email
                 Entity resolution = new Entity("incidentresolution");
                 resolution["subject"] = "Auto-closed via workflow action";
                 resolution["incidentid"] = new EntityReference("incident", caseId);
@@ -55,5 +55,7 @@ namespace CustomerService_Esnad
                 throw new InvalidPluginExecutionException("Failed to resolve case via plugin.", ex);
             }
         }
+
+
     }
 }

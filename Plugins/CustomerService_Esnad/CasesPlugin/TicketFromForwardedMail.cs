@@ -44,9 +44,18 @@ namespace CasesPlugin
                                         string body = StripHtml(plainTextBody);
 
                                         string subject1 = entity.GetAttributeValue<string>("subject");
-                                        if (subject1.ToLower() == "book an appointment")
-                                        //           if (!istrue)
+                                        if (subject1.ToLower() == "book an appointment" || subject1.ToLower() == "حجز موعد")
                                         {
+
+                                            //var note = new Entity("annotation")
+                                            //{
+                                            //    ["subject"] = "Email Processed",
+                                            //    ["notetext"] = "book an appointment consition.",
+
+                                            //};
+                                            //service.Create(note);
+
+
                                             EntityReference customerRef = null;
                                             //string beneficiaryType = MatchValueForAppointment(body, @"Type of Beneficiary\s*\n(.+)");
                                             //string idNumber = MatchValueForAppointment(body, @"ID Number\s*\n(.+)");
@@ -80,17 +89,9 @@ namespace CasesPlugin
                                                         @"(?<=\r?\n\r?\n)(?:الرخص|Licenses)\s*\r?\n\s*([^\r\n]+)"
                                                     );
 
-                                            // string licenseType = MatchValueForAppointment(body, @"(?:License Type|الرخص)\s*\n(.+)");
+
                                             string reason = MatchValueForAppointment(body, @"(?:Reason of this request|سبب حجز الموعد)\s*\n([\s\S]+)"); // Supports multiline
 
-
-
-
-
-
-
-                                            //var normalizedType = NormalizeAppointmentType(requestType2);
-                                            //var normalizedSector = NormalizeSector(department);
 
 
 
@@ -102,8 +103,8 @@ namespace CasesPlugin
                                                     Criteria = new FilterExpression
                                                     {
                                                         Conditions = {
-                                new ConditionExpression("emailaddress1", ConditionOperator.Equal, email1)
-                            }
+                                                            new ConditionExpression("emailaddress1", ConditionOperator.Equal, email1)
+                                                        }
                                                     }
                                                 };
 
@@ -131,14 +132,22 @@ namespace CasesPlugin
                                             //investor
                                             else if (beneficiaryType == "شركة" || beneficiaryType.ToLower() == "company")
                                             {
+                                                //    var note1 = new Entity("annotation")
+                                                //    {
+                                                //        ["subject"] = "Email Processed",
+                                                //        ["notetext"] = "in elseif company consition.",
+
+                                                //    };
+                                                //    service.Create(note1);
+
                                                 var query = new QueryExpression("account")
                                                 {
                                                     ColumnSet = new ColumnSet("accountid"),
                                                     Criteria = new FilterExpression
                                                     {
                                                         Conditions = {
-                                new ConditionExpression("name", ConditionOperator.Equal, companyName)
-                            }
+                                                            new ConditionExpression("name", ConditionOperator.Equal, companyName)
+                                                        }
                                                     }
                                                 };
 
@@ -163,51 +172,35 @@ namespace CasesPlugin
                                                 }
 
                                                 customerRef = new EntityReference("account", accountId);
+                                                //var note2 = new Entity("annotation")
+                                                //{
+                                                //    ["subject"] = "Email Processed",
+                                                //    ["notetext"] = "in elseif company condition account created.",
+
+                                                //};
+                                                //service.Create(note2);
                                             }
                                             else
                                             {
                                                 Console.WriteLine("❌ Unsupported beneficiary type: " + beneficiaryType);
                                                 return;
                                             }
-
                                             var incident = new Entity("incident")
                                             {
-                                                ["title"] = "book an appointment",
+                                                ["title"] = subject1,
                                                 ["description"] = reason,
-                                                //["new_requesttype"] = new OptionSetValue(GetOptionSetValue(service, "incident", "new_requesttype", requestType2)),
+                                                ["new_tickettype"] = GetLookupByName(service, "new_tickettype", subject1),
+                                                ["new_requesttype"] = new OptionSetValue(GetOptionSetValue(service, "incident", "new_requesttype", requestType2)),
 
-                                                ["new_beneficiarytype"] = new OptionSetValue(GetOptionSetValue(service, "incident", "new_beneficiarytype", ConvertBeneficiaryTypeToEnglish(beneficiaryType))),
+                                                ["new_beneficiarytype"] = new OptionSetValue(GetOptionSetValue(service, "incident", "new_beneficiarytype", beneficiaryType)),
                                                 ["new_ticketsubmissionchannel"] = new OptionSetValue(4), // Email
+                                                ["new_sector"] = new OptionSetValue(GetOptionSetValue(service, "incident", "new_sector", department)),
 
-                                                //["new_compliance"] = new OptionSetValue(GetOptionSetValue(service, "incident", "new_compliance", complianceType)),
                                                 ["customerid"] = customerRef,
                                                 ["transactioncurrencyid"] = new EntityReference("transactioncurrency", new Guid("70FA9BC3-6D4B-F011-A3FE-D4DE6FAB9C57"))
 
                                             };
-                                            //string normalizedLicense = NormalizeLicenseType(licenseType);
-                                            //if (!string.IsNullOrEmpty(normalizedLicense))
-                                            //{
-                                            //    incident["new_licenses"] = new OptionSetValue(
-                                            //        GetOptionSetValue(service, "incident", "new_licenses", normalizedLicense)
-                                            //    );
-                                            //}
-                                            //string normalizedCompliance = NormalizeComplianceType(complianceType);
 
-                                            //if (!string.IsNullOrWhiteSpace(normalizedCompliance))
-                                            //{
-                                            //    // Only try to set OptionSet if a valid value is found
-                                            //    try
-                                            //    {
-                                            //        incident["new_compliance"] = new OptionSetValue(
-                                            //            GetOptionSetValue(service, "incident", "new_compliance", normalizedCompliance)
-                                            //        );
-                                            //    }
-                                            //    catch
-                                            //    {
-                                            //        // Silently skip if OptionSet value is not found in metadata
-                                            //        // Or optionally log to a Note or Trace
-                                            //    }
-                                            //}
                                             // ➕ Set new_licensetype if sector is Licensing
                                             if ((department.Equals("Licensing", StringComparison.OrdinalIgnoreCase) ||
                                                  department.Equals("الرخص", StringComparison.OrdinalIgnoreCase)) &&
@@ -226,18 +219,28 @@ namespace CasesPlugin
                                             }
 
 
-                                            incident["new_sector"] = new OptionSetValue(GetOptionSetValue(service, "incident", "new_sector", department));
+
                                             Entity email11 = new Entity("email");
                                             email11.Id = entity.Id;
                                             email11.Attributes["regardingobjectid"] = new EntityReference("incident", service.Create(incident));
+                                            //var note3 = new Entity("annotation")
+                                            //{
+                                            //    ["subject"] = "Email Processed",
+                                            //    ["notetext"] = "in elseif company condition incident created successfully.",
+
+                                            //};
+                                            //service.Create(note3);
                                             service.Update(email11);
 
                                         }
 
-
-                                        else if (subject1.ToLower() == "contact us")
+                                        else if (subject1.ToLower() == "contact us"|| subject1.ToLower() == "اتصل بنا")
                                         {
-                                            string beneficiaryType = MatchValue(body, @"(?:نوع المستفيد|Type of Beneficiary)[:\-]?\s*(مستثمر|فرد|Investor|Individual)");
+                                            string beneficiaryType = MatchValue(
+                                             body,
+                                             @"(?:نوع المستفيد|Type of Beneficiary)[:\-]?\s*(مستثمر|فرد|Investor|Individual|وكيل لمستثمر|Investor Representative|أخرى|Other)"
+                                         );
+                                            // string beneficiaryType = MatchValue(body, @"(?:نوع المستفيد|Type of Beneficiary)[:\-]?\s*(مستثمر|فرد|Investor|Individual)");
                                             string company = MatchValue(body, @"(?:اسم الشركة|Company Name)[:\-]?\s*([^\r\n]+?)\s*(?=رقم السجل التجاري|Commercial Registration Number)");
                                             string crNumber = MatchValue(body, @"(?:رقم السجل التجاري|Commercial Registration Number(?:\s*\(CR\))?)[:\-]?\s*(\d{5,})");
 
@@ -256,7 +259,7 @@ namespace CasesPlugin
 
                                             EntityReference customerRef;
                                             //individual
-                                            if (beneficiaryType == "فرد" || beneficiaryType.ToLower() == "individual")
+                                            if (beneficiaryType == "فرد" || beneficiaryType.ToLower() == "individual" || beneficiaryType == "أخرى" || beneficiaryType.ToLower() == "other")
                                             {
                                                 var query = new QueryExpression("contact")
                                                 {
@@ -284,6 +287,7 @@ namespace CasesPlugin
                                                         ["emailaddress1"] = emailAddr,
                                                         ["mobilephone"] = phone,
                                                         ["new_nationalidnumber"] = nationalId,
+                                                        ["new_beneficiarytype"] = new OptionSetValue(GetOptionSetValue(service, "contact", "new_beneficiarytype", beneficiaryType)),
                                                         // ["new_companyname"] = GetOrCreateCompany(service, company)
                                                     };
                                                     contactId = service.Create(contact);
@@ -292,7 +296,7 @@ namespace CasesPlugin
                                                 customerRef = new EntityReference("contact", contactId);
                                             }
                                             //investor
-                                            else if (beneficiaryType == "مستثمر" || beneficiaryType.ToLower() == "investor")
+                                            else if (beneficiaryType == "مستثمر" || beneficiaryType.ToLower() == "investor" || beneficiaryType == "وكيل لمستثمر" || beneficiaryType.ToLower() == "investor representative")
                                             {
                                                 var query = new QueryExpression("account")
                                                 {
@@ -320,6 +324,7 @@ namespace CasesPlugin
                                                         ["emailaddress1"] = emailAddr,
                                                         ["new_companyrepresentativephonenumber"] = phone,
                                                         ["new_crnumber"] = crNumber,
+                                                        ["new_beneficiarytype"] = new OptionSetValue(GetOptionSetValue(service, "account", "new_beneficiarytype", beneficiaryType)),
                                                         ["transactioncurrencyid"] = new EntityReference("transactioncurrency", new Guid("70FA9BC3-6D4B-F011-A3FE-D4DE6FAB9C57"))
                                                     };
                                                     accountId = service.Create(account);
@@ -336,10 +341,11 @@ namespace CasesPlugin
                                             {
                                                 ["title"] = subject,
                                                 ["description"] = message,
-                                                ["new_tickettype"] = GetLookupByName(service, "new_tickettype", requestType),
-
-                                                ["new_beneficiarytype"] = new OptionSetValue(GetOptionSetValue(service, "incident", "new_beneficiarytype", ConvertBeneficiaryTypeToEnglish(beneficiaryType))),
-                                                ["new_ticketsubmissionchannel"] = new OptionSetValue(100000000), // Email
+                                                ["new_tickettype"] = GetLookupByName(service, "new_tickettype", subject1),
+                                                //["new_tickettype"] = GetLookupByName(service, "new_tickettype", requestType),
+                                                ["new_requesttype"] = new OptionSetValue(GetOptionSetValue(service, "incident", "new_requesttype", requestType)),
+                                                ["new_beneficiarytype"] = new OptionSetValue(GetOptionSetValue(service, "incident", "new_beneficiarytype", beneficiaryType)),
+                                                ["new_ticketsubmissionchannel"] = new OptionSetValue(4), // online form
                                                 ["customerid"] = customerRef,
                                                 ["transactioncurrencyid"] = new EntityReference("transactioncurrency", new Guid("70FA9BC3-6D4B-F011-A3FE-D4DE6FAB9C57"))
                                             };

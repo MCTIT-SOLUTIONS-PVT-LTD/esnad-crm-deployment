@@ -47,6 +47,10 @@ jobs:
       - name: Step 4 - Import Solution to Dynamics 365 On-Prem
         shell: powershell
         run: |
+          # Ensure NuGet provider is available
+          Install-PackageProvider -Name NuGet -Force -Scope CurrentUser
+          Set-PSRepository -Name 'PSGallery' -InstallationPolicy Trusted
+
           # Install and import correct CRM PowerShell module
           if (-not (Get-Module -ListAvailable -Name Microsoft.Xrm.Data.PowerShell)) {
             Install-Module -Name Microsoft.Xrm.Data.PowerShell -Force -Scope CurrentUser -AllowClobber

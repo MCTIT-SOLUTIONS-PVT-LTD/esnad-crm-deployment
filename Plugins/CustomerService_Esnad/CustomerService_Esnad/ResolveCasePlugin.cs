@@ -47,6 +47,11 @@ namespace CustomerService_Esnad
                 };
 
                 service.Execute(closeRequest);
+
+                // Now update the incident status to "Resolved"
+                Entity caseToUpdate = new Entity("incident", caseId);
+                caseToUpdate["statuscode"] = new OptionSetValue(5); // 5 represents "Resolved" status
+                service.Update(caseToUpdate);
                 tracing.Trace("✅ Case successfully resolved.");
             }
             catch (Exception ex)

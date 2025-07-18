@@ -61,7 +61,10 @@ namespace CustomerService_Esnad
                 tracing.Trace("✅ BPF stage updated to 'Processing'.");
 
                 // Step 4: Save the Case record to trigger reevaluation
-                var updateCase = new Entity("incident", caseId);
+                var updateCase = new Entity("incident", caseId)
+                {
+                    ["statuscode"] = new OptionSetValue(100000006)
+                };
                 service.Update(updateCase);
                 tracing.Trace("✅ Case record saved to trigger business logic.");
 

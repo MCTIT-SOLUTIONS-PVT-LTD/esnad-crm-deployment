@@ -1,0 +1,122 @@
+name: 🚀 Deploy CRM Solution (On-Prem)
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'Solutions/**'
+  workflow_dispatch:
+    inputs:
+      solution:
+        description: 'Path to unmanaged solution ZIP'
+        required: true
+        default: 'Solutions/EsnadCICD_1_0_0_1.zip'
+
+jobs:
+  deploy-crm:
+    runs-on: self-hosted  # This uses your self-hosted GitHub Actions runner
+
+    steps:
+      - name: ⬇Step 1 - Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Step 2 - Show Working Directory and Files
+        shell: powershell
+        run: |
+          Write-Host "Working Directory: $PWD"
+          Get-ChildItem -Recurse
+
+      - name: Step 3 - Verify Solution File Exists
+        shell: powershell
+        run: |
+          $solutionInput = "${{ github.event.inputs.solution }}"
+          if ([string]::IsNullOrWhiteSpace($solutionInput)) {
+            $solutionInput = "EsnadCICD_1_0_0_0.zip"   # Your actual file name
+          }
+          $solutionPath = Join-Path -Path "Solutions" -ChildPath $solutionInput
+          Write-Host "Checking for solution file at: $solutionPath"
+          if (-not (Test-Path $solutionPath)) {
+            throw "Solution file not found: $solutionPath"
+          } else {
+            Write-Host "Solution file found: $solutionPath"
+          }
+
+
+
+      - name: Step 4 - Import Solution to Dynamics 365 On-Prem
+        shell: powershell
+        run: |
+          # Ensure NuGet provider is available
+          Install-PackageProvider -Name NuGet -Force -Scope CurrentUser
+          Set-PSRepository -Name 'PSGallery' -InstallationPolicy Trusted
+
+          # Install and import correct CRM PowerShell module
+          if (-not (Get-Module -ListAvailable -Name Microsoft.Xrm.Data.PowerShell)) {
+            Install-Module -Name Microsoft.Xrm.Data.PowerShell -Force -Scope CurrentUser -AllowClobber
+          }
+          Import-Module Microsoft.Xrm.Data.PowerShell
+
+          $solutionInput = "${{ github.event.inputs.solution }}"
+          $solutionPath = if ($solutionInput) { $solutionInput } else { 'Solutions/EsnadCICD_1_0_0_0.zip' }
+
+          $crmUrl = "${{ vars.D365DEV_ENV_URL }}"
+          $username = "${{ vars.D365DEV_USERNAME }}"
+          $password = "${{ vars.D365DEV_PASSWORD }}"
+
+          $securePass = ConvertTo-SecureString $password -AsPlainText -Force
+          $cred = New-Object System.Management.Automation.PSCredential ($username, $securePass)
+
+          $connection = Get-CrmConnection -ConnectionString @"
+          AuthType=IFD;
+          Url=$crmUrl;
+          Domain=crm-esnad.com;
+          Username=$username;
+          Password=$password;
+          HomeRealmUri=https://sts1.crm-esnad.com/adfs/services/trust/13/usernamemixed;
+          RequireNewInstance=true
+          "@
+
+          Write-Host "Starting solution import..."
+          Write-Host "Solution Path: $solutionPath"
+
+          Import-CrmSolution `
+            -conn $connection `
+            -SolutionFilePath $solutionPath `
+            -OverwriteUnmanagedCustomizations:$true `
+            
+          Write-Host "Solution import completed successfully."
+
+
+
+      - name: Step 5 - Publish All Customizations (Optional)
+        shell: powershell
+        run: |
+          # Install and import correct module
+          if (-not (Get-Module -ListAvailable -Name Microsoft.Xrm.Data.PowerShell)) {
+            Install-Module -Name Microsoft.Xrm.Data.PowerShell -Force -Scope CurrentUser -AllowClobber
+          }
+          Import-Module Microsoft.Xrm.Data.PowerShell
+
+          $crmUrl = "${{ vars.D365DEV_ENV_URL }}"
+          $username = "${{ vars.D365DEV_USERNAME }}"
+          $password = "${{ vars.D365DEV_PASSWORD }}"
+
+          $securePass = ConvertTo-SecureString $password -AsPlainText -Force
+          $cred = New-Object System.Management.Automation.PSCredential ($username, $securePass)
+
+          $connection = Get-CrmConnection -ConnectionString @"
+          AuthType=IFD;
+          Url=$crmUrl;
+          Domain=crm-esnad.com;
+          Username=$username;
+          Password=$password;
+          HomeRealmUri=https://sts1.crm-esnad.com/adfs/services/trust/13/usernamemixed;
+          RequireNewInstance=true
+          "@
+
+          Write-Host "Publishing all customizations..."
+          Publish-CrmCustomization -conn $connection
+          Write-Host "Publish completed."
+
+ 

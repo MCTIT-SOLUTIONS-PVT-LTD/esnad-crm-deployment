@@ -1,89 +1,78 @@
 ﻿window.onLoadStageChangeEvent = function (executionContext) {
-    const formCtx = executionContext.getFormContext();
     console.log("📌 onLoadStageChangeEvent triggered");
 
-    waitForBpfReady(formCtx, () => {
-        bindStageChangeListener(formCtx);
-        monitorStageAndAttachModal(formCtx);
+    var formCtx = executionContext.getFormContext();
+
+    waitForBpfReady(formCtx, function () {
+        monitorStageAndBindNext(formCtx);
     });
 };
 
 function waitForBpfReady(formCtx, callback) {
-    let retries = 0;
-    const maxRetries = 20;
-    const interval = setInterval(() => {
-        const process = formCtx.data.process;
-        if (process?.getActiveStage?.()) {
+    var retries = 0;
+    var maxRetries = 20;
+
+    var interval = setInterval(function () {
+        var process = formCtx.data.process;
+        if (process && process.getActiveStage && process.getActiveStage()) {
+            console.log("✅ BPF ready. Stage:", process.getActiveStage().getName());
             clearInterval(interval);
-            console.log("✅ BPF ready:", process.getActiveStage().getName());
             callback();
-        } else if (++retries >= maxRetries) {
-            clearInterval(interval);
-            console.warn("⚠️ BPF not ready after retries");
+        } else {
+            retries++;
+            console.log("⏳ Waiting for BPF initialization... Attempt", retries);
+            if (retries >= maxRetries) {
+                clearInterval(interval);
+                console.warn("⚠️ BPF not ready after max retries.");
+            }
         }
     }, 500);
 }
 
-function bindStageChangeListener(formCtx) {
-    const stageToStatusMap = {
-        "15322a8f-67b8-47fb-8763-13a28686c29d": 100000000,
-        "92a6721b-d465-4d36-aef7-e8822d7a5a6a": 100000006,
-        "3b5a344f-9f9d-466b-aa08-611e60964b46": 1,
-        "65894155-4ed9-449b-ab1d-d4d4fb196e48": 100000001,
-        "1ee2e3b4-3e83-4fe3-9b5b-490b6e91e8af": 100000002,
-        "91153307-982f-479d-af7f-73048b80e52c": 100000008,
-        "ef0a2c39-d6d9-4b29-a39b-53dc539f0982": 100000003
-    };
+function monitorStageAndBindNext(formCtx) {
+    var processingDeptStageIds = [
+        "3b5a344f-9f9d-466b-aa08-611e60964b46",
+        "851023ff-3126-48b0-9b8c-8d2da2cfa3c5",
+        "26b4c9c0-c630-4540-81d3-bf3090fa3c3a"
+    ];
 
-    formCtx.data.process.addOnStageChange(() => {
-        const stage = formCtx.data.process.getActiveStage();
-        const stageId = stage?.getId()?.replace(/[{}]/g, "").toLowerCase();
-        const newStatus = stageToStatusMap[stageId];
+    setInterval(function () {
+        try {
+            var stage = formCtx.data.process.getActiveStage();
+            if (!stage) return;
 
-        if (!stageId || newStatus === undefined) return;
+            var stageId = stage.getId().replace(/[{}]/g, "").toLowerCase();
+            var nextBtn = window.top.document.querySelector('button[aria-label="Next Stage"]');
+            if (!nextBtn) return;
 
-        const statusAttr = formCtx.getAttribute("statuscode");
-        if (statusAttr?.getValue() !== newStatus) {
-            statusAttr.setValue(newStatus);
-            console.log(`✅ Statuscode updated to: ${newStatus}`);
-            //formCtx.data.save();
-        }
-    });
-}
+            if (!processingDeptStageIds.includes(stageId)) {
+                nextBtn.dataset.modalAttached = "";
+                return;
+            }
 
-function monitorStageAndAttachModal(formCtx) {
-    const modalStageIds = ["3b5a344f-9f9d-466b-aa08-611e60964b46"];
+            if (nextBtn.dataset.modalAttached !== "true") {
+                console.log("✅ Attaching modal to Next Stage for 'Processing- Department'");
+                nextBtn.dataset.modalAttached = "true";
 
-    setInterval(() => {
-        const stage = formCtx.data.process.getActiveStage();
-        const stageId = stage?.getId()?.replace(/[{}]/g, "").toLowerCase();
-        const nextBtn = window.top.document.querySelector('button[aria-label="Next Stage"]');
+                nextBtn.addEventListener("click", function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
 
-        if (!nextBtn || !stageId) return;
-
-        if (!modalStageIds.includes(stageId)) {
-            nextBtn.dataset.modalAttached = "";
-            return;
-        }
-
-        if (nextBtn.dataset.modalAttached !== "true") {
-            nextBtn.dataset.modalAttached = "true";
-            console.log("🔗 Attaching modal to Next Stage button");
-            nextBtn.addEventListener("click", (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                if (!window.top.document.getElementById("statusCommentModal")) {
-                    openCommentModal(formCtx);
-                }
-            }, true);
+                    if (!window.top.document.getElementById("statusCommentModal")) {
+                        openCommentModal(formCtx);
+                    }
+                }, true);
+            }
+        } catch (err) {
+            console.error("💥 Error in modal attach loop:", err.message);
         }
     }, 1000);
 }
 
 function injectBootstrapCss() {
-    const head = window.top.document.head;
+    var head = window.top.document.head;
     if (!head.querySelector("#bootstrap-css")) {
-        const link = document.createElement("link");
+        var link = window.top.document.createElement("link");
         link.id = "bootstrap-css";
         link.rel = "stylesheet";
         link.href = "https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css";
@@ -93,7 +82,10 @@ function injectBootstrapCss() {
 
 function openCommentModal(formContext) {
     injectBootstrapCss();
-    const doc = window.top.document;
+
+    var parentDoc = window.top.document;
+    var existing = parentDoc.getElementById("statusCommentModal");
+    if (existing) existing.remove();
 
     var modalHtml = '' +
         '<div id="statusCommentModal" class="modal fade show" tabindex="-1" style="' +
@@ -113,65 +105,96 @@ function openCommentModal(formContext) {
         '</div>' +
         '</div></div></div>';
 
-    const wrapper = doc.createElement("div");
-    wrapper.innerHTML = modalHtml;
-    doc.body.appendChild(wrapper);
+    var container = parentDoc.createElement("div");
+    container.innerHTML = modalHtml;
+    parentDoc.body.appendChild(container);
+
     window.top._statusCommentContext = formContext;
 
     window.top.submitStatusComment = function () {
-        const comment = doc.getElementById("statusCommentText")?.value?.trim();
-        if (!comment) return alert("Please enter a comment.");
+        var comment = window.top.document.getElementById("statusCommentText").value.trim();
+        if (!comment) {
+            alert("Please enter a comment.");
+            return;
+        }
 
-        formContext.data.save().then(() => {
-            const caseId = formContext.data.entity.getId().replace(/[{}]/g, "");
-            const statusAttr = formContext.getAttribute("statuscode");
-            const statusLabel = statusAttr?.getText?.() || statusAttr?.getValue();
+        var formContext = window.top._statusCommentContext;
+        if (!formContext) return;
 
-            const note = {
-                subject: "Stage Change Comment",
-                notetext: `[${statusLabel}] ${comment}`,
-                "objectid_incident@odata.bind": `/incidents(${caseId})`
+        formContext.data.save().then(function () {
+            console.log("✅ Form saved");
+
+            var caseId = formContext.data.entity.getId().replace(/[{}]/g, "");
+            var statusAttr = formContext.getAttribute("statuscode");
+            var statusLabel = statusAttr && statusAttr.getText ? statusAttr.getText() : statusAttr.getValue();
+
+            var note = {
+                "subject": "Stage Change Comment",
+                "notetext": "[" + statusLabel + "] " + comment,
+                "objectid_incident@odata.bind": "/incidents(" + caseId + ")"
             };
 
-            Xrm.WebApi.createRecord("annotation", note).then(() => {
-                assignCaseToCustomerService(formContext);
-                setTimeout(() => {
+            Xrm.WebApi.createRecord("annotation", note).then(function (result) {
+                console.log("📝 Note created:", result.id);
+
+                setCaseOwnerToCustomerService(formContext);
+
+                setTimeout(function () {
+                    console.log("⏳ Attempting stage change after save delay...");
                     activateProcessingStage(formContext);
                 }, 1000);
+
                 window.top.closeStatusCommentModal();
-            }, err => alert("❌ Failed to save comment: " + err.message));
+            }, function (error) {
+                console.error("❌ Failed to save note:", error.message);
+                alert("Error saving comment: " + error.message);
+            });
+        }).catch(function (error) {
+            console.error("❌ Error saving form before stage change:", error.message);
+            alert("Error saving form: " + error.message);
         });
     };
 
     window.top.closeStatusCommentModal = function () {
-        const modal = doc.getElementById("statusCommentModal");
-        if (modal) modal.remove();
+        var existing = window.top.document.getElementById("statusCommentModal");
+        if (existing) existing.remove();
         window.top._statusCommentContext = null;
     };
 }
 
-function assignCaseToCustomerService(formContext) {
+// ✅ Fallback Owner Assignment (Dev/Prod)
+function setCaseOwnerToCustomerService(formContext) {
     const caseId = formContext.data.entity.getId();
+    if (!caseId) return;
+
     const teamGuids = [
-        "fca3c311-074c-f011-a400-fbb6a348b744", // Production
-        "2c80efda-7c4b-f011-a3ff-af212fee8ea9"  // Development
+        "16E9DD1A-B267-F011-A409-87895D8B1D04",  // Prod
+        "2c80efda-7c4b-f011-a3ff-af212fee8ea9" //dev
     ];
 
-    function tryAssign(index) {
-        if (index >= teamGuids.length) return;
+    function tryAssignToTeam(index) {
+        if (index >= teamGuids.length) {
+            console.error("❌ All team assignment attempts failed.");
+            return;
+        }
+
+        const teamId = teamGuids[index];
+        console.log(`🔄 Trying to assign case to Team [${index + 1}] with GUID: ${teamId}`);
 
         Xrm.WebApi.updateRecord("incident", caseId, {
-            "ownerid@odata.bind": `/teams(${teamGuids[index]})`
-        }).then(() => {
-            console.log("👥 Assigned to team:", teamGuids[index]);
+            "ownerid@odata.bind": `/teams(${teamId})`
+        }).then(function () {
+            console.log(`✅ Case assigned to Team [${index + 1}]`);
             formContext.data.refresh(false);
-        }).catch(() => tryAssign(index + 1));
+        }).catch(function (error) {
+            console.warn(`⚠️ Failed to assign to Team [${index + 1}]: ${error.message}`);
+            tryAssignToTeam(index + 1); // Fallback to next team
+        });
     }
 
-    tryAssign(0);
+    tryAssignToTeam(0); // Start with first GUID
 }
 
-// 🔁 Force Processing stage using exact ID
 function activateProcessingStage(formContext) {
     const targetStageName = "Processing";
 
@@ -196,7 +219,6 @@ function activateProcessingStage(formContext) {
         formContext.data.process.setActiveStage(targetStage.getId(), function (result) {
             if (result === "success") {
                 console.log("✅ Stage changed to:", targetStageName);
-				bindStageChangeListener(formCtx);
             } else {
                 forceChangeViaWebAPI(formContext, targetStageName);
             }

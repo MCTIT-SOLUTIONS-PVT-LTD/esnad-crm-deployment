@@ -1,38 +1,35 @@
 <html><head>
-  <meta charset="UTF-8">
-  <title>CRM Incident Dashboard</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
- <style>
-   body {
+<meta charset="UTF-8">
+<title>CRM Incident Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<style>
+body {
   margin: 0;
   font-family: Arial, sans-serif;
-  background: #f4f4f4;
+  background: #FAFAFA;
 }
 
 .dashboard-card {
   background: #fff;
   border-radius: 6px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  width: 100%;
-  overflow: hidden;
+  width: 98%;
+  margin: 10px auto;
+  padding: 10px;
 }
 
-/* ✅ Fixed Toolbar */
 .toolbar {
-  position: sticky;
-  top: 0;
-  background: #fff;
-  z-index: 100;
   display: flex;
-  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  background: #FAFAFA;
   padding: 10px;
   border-bottom: 1px solid #ddd;
 }
 
-/* Filter group for inputs */
 .filter-group {
   display: flex;
   flex-wrap: wrap;
@@ -46,22 +43,12 @@ label {
 }
 
 input[type="date"], select {
-  padding: 8px;
+  padding: 8px 10px;
   font-size: 14px;
   border: 1px solid #ccc;
   border-radius: 4px;
 }
 
-button {
-  padding: 10px 14px;
-  font-size: 14px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  background: #0078d4;
-  color: white;
-  font-weight: bold;
-}
 
 button:hover {
   background: #005ea2;
@@ -74,22 +61,25 @@ button:hover {
 }
 
 .clear-btn:hover {
-  background: #ddd;
+   background: #A58A60;
+  color: #fff;
 }
 
-/* ✅ Export Dropdown */
 .export-dropdown {
   position: relative;
 }
 
 .export-btn {
-  background-color: #0078d4;
-  color: white;
+  background: #A58A60; /* Primary Base */
+  color: #fff;
   border: none;
-  padding: 10px 14px;
+  padding: 8px 14px;
   border-radius: 6px;
   font-size: 14px;
   cursor: pointer;
+}
+.export-btn:hover {
+  background: #7E6A4C; /* Primary Dark */
 }
 
 .export-dropdown-menu {
@@ -119,262 +109,332 @@ button:hover {
 }
 
 .export-dropdown-menu button:hover {
-  background: #f4f4f4;
+ background: #7E6A4C; /* Primary Dark */
 }
 
-/* ✅ Table container scrollable */
 .table-container {
   overflow-x: auto;
+  margin-top: 10px;
 }
 
 table {
   border-collapse: collapse;
   width: 100%;
-  min-width: 1200px; /* Prevents columns from shrinking too much */
+  min-width: 1400px;
 }
 
 th, td {
   border: 1px solid #ccc;
   padding: 10px;
   text-align: left;
+  white-space: nowrap;
 }
 
 th {
-  background: #0078d4;
-  color: white;
+  background: #A58A60; /* Primary Base */
+   color: #fff;
   position: sticky;
-  top: 50px; /* Below toolbar */
-  z-index: 99;
+  top: 0;
+  z-index: 100;
 }
 
-/* ✅ Pagination */
+tr:nth-child(even) {
+  background: #f9f9f9;
+}
+
+tr:hover {
+  background: #F5F2ED; /* Very light tone */
+}
+
 .pagination-wrapper {
-  display: flex;
-  justify-content: center;
+   display: flex;
+  justify-content: center;  /* Centers all content horizontally */
   align-items: center;
-  margin: 20px 10px;
-  gap: 20px;
+  margin: 15px auto;
+  gap: 20px;  /* Adds spacing between pagination, jump box, and info */
+  text-align: center;
+  width: 100%;
+  flex-wrap: wrap; /* Responsive for small screens */
+}
+
+.pagination {
+  display: flex;
+  gap: 6px;
 }
 
 .pagination button {
-  padding: 8px 12px;
-  border: 1px solid #ccc;
-  background: white;
+  padding: 6px 12px;
+   border: 1px solid #A58A60;
+  background: #D7CAB2; /* Primary Light */
   cursor: pointer;
-  border-radius: 6px;
+  border-radius: 4px;
+  color: #5B4A35;
+  font-size: 14px;
 }
 
 .pagination button.active {
-  background-color: #0078d4;
-  color: white;
+  background: #A58A60;
+  color: #fff;
   font-weight: bold;
 }
 
 .page-jump input {
-  padding: 8px;
-  width: 70px;
+  padding: 6px;
+  width: 60px;
   text-align: center;
   border: 1px solid #ccc;
-  border-radius: 6px;
+  border-radius: 4px;
 }
 
 .page-jump button {
-  padding: 8px 14px;
-  background: #0078d4;
-  color: white;
-  border-radius: 6px;
+  padding: 6px 10px;
+  background: #A58A60;
+  color: #fff;
+  border-radius: 4px;
+  margin-left: 5px;
 }
 
-/* ✅ Responsive Fix */
-@media (max-width: 1024px) {
-  .toolbar {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
-  }
-  .filter-group {
-    flex-direction: column;
-    width: 100%;
-  }
-  input, select {
-    width: 100%;
-  }
+.pagination-info {
+   font-size: 14px;
+  color: #555;
+  font-weight: bold;
 }
-  </style>
+* Apply Filter Button */
+button.apply-filter-btn {
+  background: #D7CAB2 !important; /* Primary Light */
+  color: #5B4A35 !important; /* Dark Text */
+  border: 1px solid #A58A60 !important;
+}
+button.apply-filter-btn:hover {
+   background: #A58A60 !important;
+  color: #fff !important;
+}
 
-<meta></head>
+/* Clear Filters Button */
+button.clear-btn {
+  background: #D7CAB2 !important; /* Primary Light */
+  color: #5B4A35 !important; /* Dark Text */
+  border: 1px solid #A58A60 !important;
+}
+button.clear-btn:hover {
+  background: #A58A60 !important;
+  color: #fff !important;
+}
+</style>
+<meta><meta><meta></head>
 <body data-new-gr-c-s-check-loaded="14.1245.0" data-gr-ext-installed="" data-new-gr-c-s-loaded="14.1245.0" style="overflow-wrap: break-word;">
-  <!-- Content is initialized by JS -->
-  <div class="dashboard-card">
-   <div class="toolbar">
-  <div class="filter-group">
-    <label for="fromDate" class="large-label">From Date:</label>
-    <input type="date" id="fromDate" class="large-input">
+<div class="dashboard-card" style="font-family: undefined;">
+  <div class="toolbar">
+    <div class="filter-group">
+      <label for="fromDate">From Date:</label>
+      <input type="date" id="fromDate">
 
-    <label for="toDate" class="large-label">To Date:</label>
-    <input type="date" id="toDate" class="large-input">
+      <label for="toDate">To Date:</label>
+      <input type="date" id="toDate">
 
-    <label for="buSelect" class="large-label">Business Unit:</label>
-    <select id="buSelect" class="large-input"><option value="">All</option></select>
+      <label for="buSelect">Business Unit:</label>
+      <select id="buSelect"><option value="">All</option></select>
 
-    <label for="rowsPerPage" class="large-label">Rows per page:</label>
-    <select id="rowsPerPage" class="large-input" onchange="applyFilters()">
-      <option value="10">10</option>
-      <option value="20" selected="">20</option>
-      <option value="40">40</option>
-    </select>
+      <label for="rowsPerPage">Rows per page:</label>
+      <select id="rowsPerPage" onchange="changeRowsPerPage()">
+        <option value="10" selected="">10</option>
+        <option value="20">20</option>
+        <option value="40">40</option>
+      </select>
 
-    <button onclick="applyFilters()">🔍 Apply Filter</button>
-    <button onclick="clearFilters()" class="clear-btn">🧹 Clear Filters</button>
-  </div>
+		<button class="apply-filter-btn" onclick="applyFilters()">Apply Filter</button>
+		<button class="clear-btn" onclick="clearFilters()">Clear Filters</button>
 
-  <div class="export-dropdown">
-    <button class="export-btn" onclick="toggleExportMenu()">⬇ Export ▼</button>
-    <div id="exportDropdown" class="export-dropdown-menu">
-      <button onclick="exportToExcel()">📊 Export to Excel</button>
-      <button onclick="exportToPDF()">📄 Export to PDF</button>
     </div>
+
+    <div class="export-dropdown">
+  <button class="export-btn" id="exportToggle">⬇ Export ▼</button>
+  <div id="exportDropdown" class="export-dropdown-menu">
+    <button onclick="exportToExcel()">📊 Export to Excel</button>
+    <button onclick="exportToPDF()">📄 Export to PDF</button>
   </div>
 </div>
 
+  </div>
 
-
-    <div class="record-count" id="recordCount">Records: 0</div>
-<div class="table-container">
+  <div class="table-container">
     <table>
       <thead>
         <tr>
-          <th onclick="sortBy('ticketnumber')"><span id="sort-ticketnumber">Ticket</span></th>
-          <th onclick="sortBy('title')"><span id="sort-title">Title</span></th>
+          <th>Ticket</th>
+          <th>Title</th>
           <th>Priority</th>
-          <th onclick="sortBy('departmentname')"><span id="sort-departmentname">Department</span></th>
-          <th onclick="sortBy('createdonStr')"><span id="sort-createdonStr">Created Date</span></th>
-		  <th>Current Responsible Employee</th>
-		<th>Ticket Type</th>
-		<th>Customer</th>
-		<th>Ticket Creator (Employee)</th>
-		<th>Status</th>
-		<th>Ticket Submission Channel</th>
-		<th>Beneficiary Type</th>
-		<th>Request Type</th>
-		 <th>Description</th>
-		  <th>Solution Description</th>
-		  <th onclick="sortBy('resolvebyStr')">Ticket Resolved Date</th>
-
+          <th>Department</th>
+          <th onclick="sortBy('createdon')">Created Date ▲▼</th>
+          <th>Current Responsible Employee</th>
+          <th>Ticket Type</th>
+          <th>Customer</th>
+          <th>Ticket Creator (Employee)</th>
+          <th>Status</th>
+          <th>Ticket Submission Channel</th>
+          <th>Beneficiary Type</th>
+          <th>Request Type</th>
+          <th>Description</th>
+          <th>Solution Description</th>
+          <th>Ticket Resolved Date</th>
         </tr>
       </thead>
       <tbody id="incidentTableBody"></tbody>
     </table>
+    <div class="pagination-wrapper" id="paginationContainer"></div>
 
-    <div id="paginationContainer"></div>
-    <div class="pagination-info" id="paginationInfo">Showing 0–0 of 0 results</div>
-	
   </div>
+</div>
 
-  <!-- JavaScript block loads data, handles filters, sorting, and export -->
-  <script>
-    let incidentData = [];
-    let filteredData = [];
-    let currentPage = 1;
-    let rowsPerPage = 20;
-    let currentSortColumn = null;
-    let currentSortDirection = 'asc';
+<script>
+let incidentData = [];
+let filteredData = [];
+let currentPage = 1;
+let rowsPerPage = 20;
+let currentSortColumn = null;
+let currentSortDirection = 'desc'; // or 'desc'
 
-    const context = typeof Xrm !== "undefined" ? Xrm : (typeof parent.Xrm !== "undefined" ? parent.Xrm : null);
-    if (!context) {
-      alert("⚠️ This web resource must be opened within Dynamics 365.");
-      throw new Error("❌ Xrm context not found.");
+document.getElementById("exportToggle").addEventListener("click", function (e) {
+  e.stopPropagation(); // Prevent event bubbling
+  const dropdown = document.getElementById("exportDropdown");
+  dropdown.classList.toggle("show");
+});
+
+// Close dropdown when clicking outside
+document.addEventListener("click", function (e) {
+  const dropdown = document.getElementById("exportDropdown");
+  if (dropdown.classList.contains("show")) {
+    dropdown.classList.remove("show");
+  }
+});
+
+// ✅ On Page Load
+window.onload = async function () {
+  const today = new Date().toISOString().split("T")[0];
+  document.getElementById("fromDate").value = today; // Show today's date
+  document.getElementById("toDate").value = today;
+    await loadBusinessUnits(); // ✅ Load BU Dropdown
+  await fetchIncidentData();
+  renderTable(incidentData); // ✅ Show all records initially
+};
+
+
+const context = typeof Xrm !== "undefined" ? Xrm : (typeof parent.Xrm !== "undefined" ? parent.Xrm : null);
+if (!context) {
+  alert("⚠️ This web resource must be opened within Dynamics 365.");
+  throw new Error("❌ Xrm context not found.");
+}
+
+function renderTable(data) {
+  const tbody = document.getElementById("incidentTableBody");
+  tbody.innerHTML = "";
+
+  if (data.length === 0) {
+    const tableContainer = document.querySelector(".table-container");
+    const tbody = document.getElementById("incidentTableBody");
+    tbody.innerHTML = "";
+
+    // ✅ Add centered message
+    tbody.innerHTML = `
+        <tr>
+            <td colspan="16" style="
+                text-align: center;
+                font-size: 20px;
+                font-weight: bold;
+                color: #7E6A4C;
+                padding: 100px;
+            ">
+                No tickets found for the selected date range or business unit.
+            </td>
+        </tr>
+    `;
+
+    // ✅ Hide pagination when no records
+    document.getElementById("paginationContainer").style.display = "none";
+
+    return; // Exit function
+} else {
+    // ✅ Show pagination if there are records
+    document.getElementById("paginationContainer").style.display = "flex";
+}
+
+
+  rowsPerPage = parseInt(document.getElementById("rowsPerPage").value || "20");
+  const startIndex = (currentPage - 1) * rowsPerPage;
+  const pageData = data.slice(startIndex, startIndex + rowsPerPage);
+
+  pageData.forEach(item => {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${item.ticketnumber}</td>
+      <td>${item.title}</td>
+      <td>${item.prioritycode}</td>
+      <td>${item.departmentname}</td>
+      <td>${item.createdonStr}</td>
+      <td>${item.currentEmployee}</td>
+      <td>${item.ticketType}</td>
+      <td>${item.customer}</td>
+      <td>${item.createdBy}</td>
+      <td>${item.status}</td>
+      <td>${item.submissionChannel}</td>
+      <td>${item.beneficiaryType}</td>
+      <td>${item.requestType}</td>
+      <td>${item.description}</td>
+      <td>${item.solutiondescription}</td>
+      <td>${item.resolvebyStr}</td>
+    `;
+    tbody.appendChild(row);
+  });
+
+  renderPagination();
+}
+function changeRowsPerPage() {
+  rowsPerPage = parseInt(document.getElementById("rowsPerPage").value);
+  currentPage = 1; // reset to first page
+  renderTable(filteredData.length ? filteredData : incidentData);
+}
+
+async function loadBusinessUnits() {
+    try {
+        const result = await context.WebApi.retrieveMultipleRecords("businessunit", "?$select=name,businessunitid");
+        const buSelect = document.getElementById("buSelect");
+
+        result.entities.forEach(bu => {
+            const opt = document.createElement("option");
+            opt.value = bu.businessunitid.toLowerCase();
+            opt.text = bu.name;
+            buSelect.appendChild(opt);
+        });
+    } catch (error) {
+        console.error("Error loading Business Units:", error);
     }
+}
 
-    const priorities = { 1: "Critical", 2: "High", 3: "Medium", 4: "Low" };
-
-    function updateRecordCount(count) {
-      document.getElementById("recordCount").innerText = `Records: ${count}`;
-    }
-
-    function renderTable(data) {
-      const tbody = document.getElementById("incidentTableBody");
-      tbody.innerHTML = "";
-
-      const columns = ['ticketnumber', 'title', 'prioritycode', 'departmentname', 'createdonStr'];
-      columns.forEach(col => {
-        const span = document.getElementById(`sort-${col}`);
-        if (span) span.textContent = span.textContent.replace(/[\u25B2\u25BC]/g, '').trim();
-      });
-
-      if (currentSortColumn) {
-        const activeSpan = document.getElementById(`sort-${currentSortColumn}`);
-        if (activeSpan) {
-          activeSpan.textContent += currentSortDirection === "asc" ? " ▲" : " ▼";
-        }
-      }
-
-      rowsPerPage = parseInt(document.getElementById("rowsPerPage").value || "20");
-      const startIndex = (currentPage - 1) * rowsPerPage;
-      const pageData = data.slice(startIndex, startIndex + rowsPerPage);
-
-      if (pageData.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5">No tickets found for the selected date range or business unit.Try adjusting the filters or date range.</td></tr>';
-        updateRecordCount(0);
-        renderPagination();
-        return;
-      }
-
-      pageData.forEach(item => {
-        const row = document.createElement("tr");
-  row.innerHTML = `
-  <td>${item.ticketnumber}</td>
-  <td>${item.title}</td>
-  <td>${item.prioritycode}</td>
-  <td>${item.departmentname}</td>
-  <td>${item.createdonStr}</td>
-  <td>${item.currentEmployee}</td>
-  <td>${item.ticketType}</td>
-  <td>${item.customer}</td>
-  <td>${item.createdBy}</td>
-  <td>${item.status}</td>
-  <td>${item.submissionChannel}</td>
-  <td>${item.beneficiaryType}</td>
-  <td>${item.requestType}</td>
-  <td>${item.description}</td>
-  <td>${item.solutiondescription}</td>
-  <td>${item.resolvebyStr}</td>
-`;
-
-
-        tbody.appendChild(row);
-      });
-
-      updateRecordCount(data.length);
-      renderPagination();
-    }
-
-  function renderPagination() {
+function renderPagination() {
   const container = document.getElementById("paginationContainer");
   container.innerHTML = "";
 
-  const totalRecords = filteredData.length;
+  const totalRecords = filteredData.length || incidentData.length;
   const totalPages = Math.ceil(totalRecords / rowsPerPage);
+  if (totalPages <= 1) return;
 
-  // Create wrapper for pagination & jump
   const wrapper = document.createElement("div");
   wrapper.className = "pagination-wrapper";
 
-  // Pagination buttons container
+  // ✅ Pagination Buttons
   const paginationButtons = document.createElement("div");
   paginationButtons.className = "pagination";
 
-  // Prev Button
-  const prevBtn = document.createElement("button");
-  prevBtn.innerText = "Prev";
-  prevBtn.disabled = currentPage === 1;
-  prevBtn.onclick = () => {
-    currentPage--;
-    renderTable(filteredData);
-  };
+  // Previous Button
+  const prevBtn = createButton("Prev", () => {
+    if (currentPage > 1) {
+      currentPage--;
+      renderTable(filteredData.length ? filteredData : incidentData);
+    }
+  }, currentPage === 1);
   paginationButtons.appendChild(prevBtn);
 
-  // Visible page logic
+  // Show only 5 pages at a time
   const visiblePages = 5;
   let startPage = Math.max(1, currentPage - 2);
   let endPage = Math.min(totalPages, currentPage + 2);
@@ -394,16 +454,15 @@ th {
   }
 
   // Next Button
-  const nextBtn = document.createElement("button");
-  nextBtn.innerText = "Next";
-  nextBtn.disabled = currentPage === totalPages;
-  nextBtn.onclick = () => {
-    currentPage++;
-    renderTable(filteredData);
-  };
+  const nextBtn = createButton("Next", () => {
+    if (currentPage < totalPages) {
+      currentPage++;
+      renderTable(filteredData.length ? filteredData : incidentData);
+    }
+  }, currentPage === totalPages);
   paginationButtons.appendChild(nextBtn);
 
-  // Page Jump Section (right side)
+  // ✅ Jump to Page Feature
   const pageJump = document.createElement("div");
   pageJump.className = "page-jump";
 
@@ -412,7 +471,6 @@ th {
   jumpInput.placeholder = "Page";
   jumpInput.min = 1;
   jumpInput.max = totalPages;
-  jumpInput.style.width = "60px";
 
   const goBtn = document.createElement("button");
   goBtn.textContent = "Go";
@@ -420,7 +478,7 @@ th {
     const page = parseInt(jumpInput.value);
     if (page >= 1 && page <= totalPages) {
       currentPage = page;
-      renderTable(filteredData);
+      renderTable(filteredData.length ? filteredData : incidentData);
     } else {
       alert(`Enter a valid page number (1-${totalPages})`);
     }
@@ -429,135 +487,157 @@ th {
   pageJump.appendChild(jumpInput);
   pageJump.appendChild(goBtn);
 
-  // Combine into wrapper
+  // ✅ Showing Info
+  const info = document.createElement("div");
+  info.className = "pagination-info";
+  const start = (currentPage - 1) * rowsPerPage + 1;
+  const end = Math.min(currentPage * rowsPerPage, totalRecords);
+  info.innerText = `Showing ${start}–${end} of ${totalRecords} results`;
+
+  // Combine Everything
   wrapper.appendChild(paginationButtons);
   wrapper.appendChild(pageJump);
+  wrapper.appendChild(info);
 
   container.appendChild(wrapper);
 
-  // Showing info
-  const start = (currentPage - 1) * rowsPerPage + 1;
-  const end = Math.min(currentPage * rowsPerPage, totalRecords);
-  document.getElementById("paginationInfo").innerText = `Showing ${start}–${end} of ${totalRecords} results`;
+  function createButton(text, onClick, disabled = false) {
+    const btn = document.createElement("button");
+    btn.innerText = text;
+    btn.disabled = disabled;
+    btn.onclick = onClick;
+    return btn;
+  }
 
-  // Helper functions
   function createPageButton(page, active = false) {
     const btn = document.createElement("button");
     btn.textContent = page;
     if (active) btn.classList.add("active");
     btn.onclick = () => {
       currentPage = page;
-      renderTable(filteredData);
+      renderTable(filteredData.length ? filteredData : incidentData);
     };
     return btn;
   }
 
   function createDots() {
-    const dots = document.createElement("span");
-    dots.textContent = "...";
-    return dots;
+    const span = document.createElement("span");
+    span.textContent = "...";
+    return span;
   }
 }
 
-    function sortBy(column) {
-      if (currentSortColumn === column) {
-        currentSortDirection = currentSortDirection === "asc" ? "desc" : "asc";
-      } else {
-        currentSortColumn = column;
-        currentSortDirection = "asc";
-      }
+function exportToExcel() {
+    // Get filter values
+    const fromDate = document.getElementById("fromDate").value || "All";
+    const toDate = document.getElementById("toDate").value || "All";
+    const buSelect = document.getElementById("buSelect");
+    const buName = buSelect.options[buSelect.selectedIndex].text || "All";
 
-      filteredData.sort((a, b) => {
-        const aVal = a[column]?.toString().toLowerCase() || "";
-        const bVal = b[column]?.toString().toLowerCase() || "";
-        if (aVal < bVal) return currentSortDirection === "asc" ? -1 : 1;
-        if (aVal > bVal) return currentSortDirection === "asc" ? 1 : -1;
-        return 0;
-      });
+    // Prepare file name
+    const fileName = `${fromDate}_to_${toDate}_${buName}_Incidents.xlsx`;
 
-      renderTable(filteredData);
-    }
+    // Prepare sheet name (Excel allows max 31 chars)
+    const sheetName = `${fromDate}_${toDate}`.substring(0, 31);
 
-    function exportToExcel() {
-      const ws = XLSX.utils.json_to_sheet(filteredData.map(d => ({
-        "Ticket #": d.ticketnumber,
+    // Get data
+    const data = filteredData.length ? filteredData : incidentData;
+
+    // Convert to Excel
+    const ws = XLSX.utils.json_to_sheet(data.map(d => ({
+        "Ticket": d.ticketnumber,
         "Title": d.title,
         "Priority": d.prioritycode,
         "Department": d.departmentname,
         "Created Date": d.createdonStr,
-		"Current Responsible Employee": d.currentEmployee,
-		"Ticket Type": d.ticketType,
-		"Customer": d.customer,
-		"Ticket Creator": d.createdBy,
-		"Status": d.status,
-		"Ticket Submission Channel": d.submissionChannel,
-		"Beneficiary Type": d.beneficiaryType,
-		"Request Type": d.requestType,
-		"Description":d.description,
-		"solutiondescription":d.solutiondescription,
-		"Resolveby":d.resolvebyStr 
+        "Current Responsible Employee": d.currentEmployee,
+        "Ticket Type": d.ticketType,
+        "Customer": d.customer,
+        "Ticket Creator": d.createdBy,
+        "Status": d.status,
+        "Ticket Submission Channel": d.submissionChannel,
+        "Beneficiary Type": d.beneficiaryType,
+        "Request Type": d.requestType,
+        "Description": d.description,
+        "Solution Description": d.solutiondescription,
+        "Resolved Date": d.resolvebyStr
+    })));
 
-      })));
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Incidents");
-      XLSX.writeFile(wb, "Incidents.xlsx");
-    }
-
-    function exportToPDF() {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
-      let y = 10;
-      doc.setFontSize(12);
-      doc.text("Incident Report", 14, y);
-      y += 10;
-      filteredData.forEach((d, i) => {
-        doc.text(`${i + 1}. ${d.ticketnumber} | ${d.title} | ${d.prioritycode} | ${d.departmentname} | ${d.createdonStr}`, 10, y);
-        y += 8;
-        if (y > 280) {
-          doc.addPage();
-          y = 10;
-        }
-      });
-      doc.save("Incidents.pdf");
-    }
-
-    function toggleExportMenu() {
-  const menu = document.getElementById("exportDropdown");
-  menu.classList.toggle("show");
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+    XLSX.writeFile(wb, fileName);
 }
 
-document.addEventListener("click", (e) => {
-  if (!e.target.closest(".export-dropdown")) {
-    document.getElementById("exportDropdown").classList.remove("show");
-  }
-});
 
+function exportToPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('l', 'pt', 'a4'); // Landscape for better table fit
 
-    function clearFilters() {
-      document.getElementById("fromDate").value = "";
-      document.getElementById("toDate").value = "";
-      document.getElementById("buSelect").value = "";
-      document.getElementById("rowsPerPage").value = "20";
-      currentPage = 1;
-      applyFilters();
-    }
+    // ✅ Dynamic File Name (same as Excel)
+    const fromDate = document.getElementById("fromDate").value || "All";
+    const toDate = document.getElementById("toDate").value || "All";
+    const buSelect = document.getElementById("buSelect");
+    const buName = buSelect.options[buSelect.selectedIndex].text || "All";
+    const fileName = `${fromDate}_to_${toDate}_${buName}_Incidents.pdf`;
 
-    async function loadBusinessUnits() {
-      try {
-        const result = await context.WebApi.retrieveMultipleRecords("businessunit", "?$select=name,businessunitid");
-        const buSelect = document.getElementById("buSelect");
-        result.entities.forEach(bu => {
-          const opt = document.createElement("option");
-          opt.value = bu.businessunitid.toLowerCase();
-          opt.text = bu.name;
-          buSelect.appendChild(opt);
+    // ✅ Add Title
+    doc.setFontSize(16);
+    doc.text("Incident Report", 40, 30);
+    doc.setFontSize(12);
+    doc.text(`Date Range: ${fromDate} to ${toDate}`, 40, 50);
+    doc.text(`Business Unit: ${buName}`, 40, 70);
+
+    // ✅ Prepare Table Data
+    const data = (filteredData.length ? filteredData : incidentData).map(d => [
+        d.ticketnumber,
+        d.title,
+        d.prioritycode,
+        d.departmentname,
+        d.createdonStr,
+        d.currentEmployee,
+        d.ticketType,
+        d.customer,
+        d.createdBy,
+        d.status
+    ]);
+
+    // ✅ Define Headers
+    const headers = [
+        ["Ticket #", "Title", "Priority", "Department", "Created Date",
+         "Employee", "Ticket Type", "Customer", "Created By", "Status"]
+    ];
+
+    // ✅ Use AutoTable Plugin for PDF Table
+    if (doc.autoTable) {
+        doc.autoTable({
+            head: headers,
+            body: data,
+            startY: 90,
+            theme: 'grid',
+            styles: { fontSize: 8, cellPadding: 3 },
+            headStyles: { fillColor: [165, 138, 96] }, // Brown Header (matches your theme)
         });
-      } catch (e) {
-        console.error("Failed to load BUs", e.message);
-      }
+    } else {
+        console.error("AutoTable plugin is required for PDF table export.");
     }
 
-   const fetchXml = `
+    // ✅ Save PDF with dynamic name
+    doc.save(fileName);
+}
+
+
+function clearFilters() {
+  const today = new Date().toISOString().split("T")[0];
+  document.getElementById("fromDate").value = today;
+  document.getElementById("toDate").value = today;
+  document.getElementById("buSelect").value = "";
+  document.getElementById("rowsPerPage").value = "20";
+  currentPage = 1;
+  filteredData = [];
+  renderTable(incidentData);
+}
+
+const fetchXml = `
 <fetch top="500">
   <entity name="incident">
     <attribute name="ticketnumber" />
@@ -575,91 +655,100 @@ document.addEventListener("click", (e) => {
     <attribute name="new_ticketsubmissionchannel" />
     <attribute name="new_beneficiarytype" />
     <attribute name="new_requesttype" />
-    <attribute name="owningbusinessunit" />
     <attribute name="new_businessunitid" />
     <order attribute="createdon" descending="true" />
-    <link-entity name="businessunit" from="businessunitid" to="owningbusinessunit" alias="bu">
-      <attribute name="name" />
-    </link-entity>
     <link-entity name="businessunit" from="businessunitid" to="new_businessunitid" alias="dept">
       <attribute name="name" />
     </link-entity>
   </entity>
 </fetch>`;
 
-
-
 async function fetchIncidentData() {
-      try {
-        const result = await context.WebApi.retrieveMultipleRecords("incident", "?fetchXml=" + encodeURIComponent(fetchXml));
-incidentData = result.entities.map(rec => {
-  const created = new Date(rec.createdon);
-  const resolvedDate = rec.resolveby ? new Date(rec.resolveby) : null;
-
-  return {
-    ticketnumber: rec.ticketnumber || "",
-    title: rec.title || "",
-    description: rec.description || "",
-    solutiondescription: rec.new_solutiondescription || "",
-    resolveby: resolvedDate,
-    resolvebyStr: resolvedDate ? resolvedDate.toLocaleString() : "",
-    prioritycode: priorities[rec.prioritycode] || `Unknown (${rec.prioritycode})`,
-    createdon: created,
-    createdonStr: created.toLocaleDateString(),
-
-    // ✅ LOOKUPS
-    currentEmployee: rec["_ownerid_value@OData.Community.Display.V1.FormattedValue"] || "",
-    ticketType: rec["_new_tickettype_value@OData.Community.Display.V1.FormattedValue"] || "",
-    customer: rec["_customerid_value@OData.Community.Display.V1.FormattedValue"] || "",
-    createdBy: rec["_createdby_value@OData.Community.Display.V1.FormattedValue"] || "",
-
-    // ✅ NEW FIELDS
-    status: rec["statecode@OData.Community.Display.V1.FormattedValue"] || "",
-    submissionChannel: rec["new_ticketsubmissionchannel@OData.Community.Display.V1.FormattedValue"] || "",
-    beneficiaryType: rec["new_beneficiarytype@OData.Community.Display.V1.FormattedValue"] || "",
-    requestType: rec["new_requesttype@OData.Community.Display.V1.FormattedValue"] || "",
-
-    businessunitid: rec["_owningbusinessunit_value"]?.toLowerCase() || null,
-    businessunitname: rec["bu.name"] || "",
-    departmentid: rec["_new_businessunitid_value"]?.toLowerCase() || null,
-    departmentname: rec["dept.name"] || ""
-  };
+  const result = await context.WebApi.retrieveMultipleRecords("incident", "?fetchXml=" + encodeURIComponent(fetchXml));
+  incidentData = result.entities.map(rec => {
+    const created = new Date(rec.createdon);
+    const resolvedDate = rec.resolveby ? new Date(rec.resolveby) : null;
+    return {
+        ticketnumber: rec.ticketnumber || "",
+        title: rec.title || "",
+        description: rec.description || "",
+        solutiondescription: rec.new_solutiondescription || "",
+        resolvebyStr: resolvedDate ? resolvedDate.toLocaleString() : "",
+        prioritycode: rec.prioritycode ? ["Critical", "High", "Medium", "Low"][rec.prioritycode - 1] : "",
+        createdon: created,
+        createdonStr: created.toLocaleDateString(),
+        currentEmployee: rec["_ownerid_value@OData.Community.Display.V1.FormattedValue"] || "",
+        ticketType: rec["_new_tickettype_value@OData.Community.Display.V1.FormattedValue"] || "",
+        customer: rec["_customerid_value@OData.Community.Display.V1.FormattedValue"] || "",
+        createdBy: rec["_createdby_value@OData.Community.Display.V1.FormattedValue"] || "",
+        status: rec["statecode@OData.Community.Display.V1.FormattedValue"] || "",
+        submissionChannel: rec["new_ticketsubmissionchannel@OData.Community.Display.V1.FormattedValue"] || "",
+        beneficiaryType: rec["new_beneficiarytype@OData.Community.Display.V1.FormattedValue"] || "",
+        requestType: rec["new_requesttype@OData.Community.Display.V1.FormattedValue"] || "",
+        departmentname: rec["dept.name"] || "",
+        businessunitid: rec["_new_businessunitid_value"]?.toLowerCase() || "" // ✅ Added BU ID
+    };
 });
 
+}
+function sortBy(column) {
+  // Toggle sort direction
+  if (currentSortColumn === column) {
+    currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
+  } else {
+    currentSortColumn = column;
+    currentSortDirection = 'asc';
+  }
 
-        applyFilters();
-      } catch (e) {
-        console.error("Error fetching incidents:", e.message);
-      }
+  // Sort filteredData or incidentData
+  let dataToSort = filteredData.length ? filteredData : incidentData;
+
+  dataToSort.sort((a, b) => {
+    let aVal = a[column];
+    let bVal = b[column];
+
+    if (column === 'createdon') {
+      aVal = new Date(aVal);
+      bVal = new Date(bVal);
     }
-	
 
-    function applyFilters() {
-      const fromDate = document.getElementById("fromDate").value;
-      const toDate = document.getElementById("toDate").value;
-      const buId = document.getElementById("buSelect").value.toLowerCase();
+    if (aVal < bVal) return currentSortDirection === 'asc' ? -1 : 1;
+    if (aVal > bVal) return currentSortDirection === 'asc' ? 1 : -1;
+    return 0;
+  });
 
-      const from = fromDate ? new Date(fromDate + "T00:00:00") : null;
-      const to = toDate ? new Date(toDate + "T23:59:59") : null;
+  renderTable(dataToSort);
 
-      filteredData = incidentData.filter(item => {
+  // Update header arrow
+  const createdHeader = document.querySelector('#createdonHeader');
+  if (createdHeader) {
+    createdHeader.innerHTML = `Created Date ${currentSortDirection === 'asc' ? '▲' : '▼'}`;
+  }
+}
+
+function applyFilters() {
+    const fromDate = document.getElementById("fromDate").value;
+    const toDate = document.getElementById("toDate").value;
+    const buId = document.getElementById("buSelect").value.toLowerCase();
+
+    const from = fromDate ? new Date(fromDate + "T00:00:00") : null;
+    const to = toDate ? new Date(toDate + "T23:59:59") : null;
+
+    filteredData = incidentData.filter(item => {
         let match = true;
         if (from) match = item.createdon >= from;
         if (to) match = match && item.createdon <= to;
-        if (buId) match = match && item.businessunitid === buId;
+        if (buId) match = match && item.businessunitid === buId; 
         return match;
-      });
+    });
 
-      currentPage = 1;
-      sortBy(currentSortColumn || "createdonStr");
-    }
+    if (!from && !to && !buId) filteredData = [...incidentData];
 
-    window.onload = async function () {
-      await loadBusinessUnits();
-      await fetchIncidentData();
-    };
-  </script>
+    currentPage = 1;
+    renderTable(filteredData);
+}
+
+</script>
 
 
-
-</div></body><grammarly-desktop-integration data-grammarly-shadow-root="true"></grammarly-desktop-integration></html>
+<grammarly-desktop-integration data-grammarly-shadow-root="true"></grammarly-desktop-integration></body></html>

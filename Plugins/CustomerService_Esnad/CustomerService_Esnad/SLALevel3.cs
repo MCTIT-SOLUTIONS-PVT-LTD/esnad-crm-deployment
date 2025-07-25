@@ -58,7 +58,7 @@ namespace CustomerService_Esnad
                 if (ownerRef.LogicalName == "team")
                 {
                     tracing.Trace("Owner is a Team. Sending email to Sector Head in this team.");
-                    SendEmailToTeam(service, crmAdminUser, fromParty, caseId, caseTitle, ownerRef, ownerRef.Id, caseUrl, tracing);
+                    SendEmailToTeam(service, crmAdminUser, fromParty, caseId, caseTitle, ownerRef, ownerRef.Id, caseUrl, tracing, ownerRef.Name);
                 }
                 else if (ownerRef.LogicalName == "systemuser")
                 {
@@ -82,7 +82,7 @@ namespace CustomerService_Esnad
             }
         }
 
-        private void SendEmailToTeam(IOrganizationService service, Entity crmAdminUser, Entity fromParty, Guid caseId, string caseTitle, EntityReference ownerRef, Guid teamId, string caseUrl, ITracingService tracing, string teamName = "")
+        private void SendEmailToTeam(IOrganizationService service, Entity crmAdminUser, Entity fromParty, Guid caseId, string caseTitle, EntityReference ownerRef, Guid teamId, string caseUrl, ITracingService tracing, string teamName)
         {
             var users = GetSectorHeadInTeam(service, teamId, tracing);
             if (users.Count == 0)
@@ -103,12 +103,12 @@ namespace CustomerService_Esnad
 
             var email = new Entity("email")
             {
-              
+                ["subject"] = subject,
                 ["description"] = $@"
         <html>
         <body>
             <p><img src='{imageUrl}' alt='CRM Logo' style='width:200px; margin-bottom:10px;' /></p>
-            <p>Dear Core Support Team,<br/><br/></p>
+            <p>Dear Sector Head Team,<br/><br/></p>
             <p>This is to inform you that the following case has breached its SLA threshold:</p>
             <p>Please review: <a href='{caseUrl}' style='color:#0078d4; font-weight:bold;'>{caseTitle}</a></p>
             <p><strong>Assigned Agent:</strong> {ownerRef.Name}</p>
